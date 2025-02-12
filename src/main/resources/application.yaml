@@ -1,3 +1,8 @@
 spring:
   application:
     name: border
+
+# Jwt
+jwt:
+  secret: fadjfa
+  expiration: jfafd
