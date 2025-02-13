@@ -6,6 +6,7 @@ import com.example.border.model.dto.auth.EmployerRegisterRequest;
 import com.example.border.model.dto.auth.VerificationRequest;
 import com.example.border.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +37,8 @@ public class AuthController {
             summary = "Повторная отправка кода",
             description = "Отправка кода подтверждения повторно на email."
     )
-    public ResponseEntity<String> resendCode(@RequestParam String email) {
+    public ResponseEntity<String> resendCode(@Parameter(
+            required = true, example = "user@example.com") @RequestParam String email) {
         return ResponseEntity.ok(authService.resendVerificationCode(email));
 
     }
