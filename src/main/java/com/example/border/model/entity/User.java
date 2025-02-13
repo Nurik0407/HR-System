@@ -2,8 +2,7 @@ package com.example.border.model.entity;
 
 import com.example.border.model.enums.Role;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,6 +14,9 @@ import java.util.List;
 @Table(name = "users")
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User extends BaseEntity implements UserDetails {
 
     @Column(unique = true, nullable = false)
@@ -23,6 +25,7 @@ public class User extends BaseEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
     private boolean enabled;
+    private boolean hasPassword;
 
     @OneToOne(mappedBy = "user")
     Employer employer;

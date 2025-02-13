@@ -8,6 +8,7 @@ import com.example.border.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -60,4 +61,16 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody EmployerLoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
+
+    @PostMapping("/select-role")
+    @Operation(
+            summary = "Выбор роли пользователя",
+            description = "Устанавливает роль пользователя в сессии и перенаправляет его на страницу авторизации через Google OAuth2."
+    )
+    public String selectRole(@RequestParam String role,
+                             HttpSession session) {
+        session.setAttribute("ROLE", role.toUpperCase());
+        return "redirect:/oauth2/authorization/google";
+    }
+
 }

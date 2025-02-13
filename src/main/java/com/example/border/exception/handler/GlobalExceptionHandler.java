@@ -1,9 +1,6 @@
 package com.example.border.exception.handler;
 
-import com.example.border.exception.NotFoundException;
-import com.example.border.exception.UserAlreadyEnabledException;
-import com.example.border.exception.UserAlreadyExistsException;
-import com.example.border.exception.VerificationCodeExpiredException;
+import com.example.border.exception.*;
 import com.example.border.model.dto.exception.ExceptionResponse;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -76,6 +73,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(VerificationCodeExpiredException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ExceptionResponse handleVerificationCodeExpiredException(VerificationCodeExpiredException e) {
+        return new ExceptionResponse(
+                HttpStatus.BAD_REQUEST,
+                e.getClass().getSimpleName(),
+                e.getMessage()
+        );
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ExceptionResponse handleIllegalArgumentException(IllegalArgumentException e) {
+        return new ExceptionResponse(
+                HttpStatus.BAD_REQUEST,
+                e.getClass().getSimpleName(),
+                e.getMessage()
+        );
+    }
+
+    @ExceptionHandler(InvalidRoleException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ExceptionResponse handleInvalidRoleException(InvalidRoleException e) {
         return new ExceptionResponse(
                 HttpStatus.BAD_REQUEST,
                 e.getClass().getSimpleName(),
