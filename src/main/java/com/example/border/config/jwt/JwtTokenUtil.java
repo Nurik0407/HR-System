@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtTokenUtil {
@@ -21,7 +23,11 @@ public class JwtTokenUtil {
     private Long expiration;
 
     public String generateToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
+
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
@@ -34,7 +40,8 @@ public class JwtTokenUtil {
                 .setSigningKey(getSecretKey())
                 .build()
                 .parseClaimsJws(token)
-                .getSignature();
+                .getBody()
+                .getSubject();
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
