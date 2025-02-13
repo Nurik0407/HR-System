@@ -1,3 +1,24 @@
 spring:
   application:
     name: border
+# Email Service
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: nuradil936@gmail.com
+    password: rtrj ixfj ubnt dbpg
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+           enable: true
+
+# Jwt
+jwt:
+  secret: y3sLsTxsHDI5b++3MRgGSOFwE2Md+Ai4MS1G+LLCuu8=
+  expiration: 3600000
+
+# OpenApi
+openapi:
+  url: example.com
