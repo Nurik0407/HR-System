@@ -84,7 +84,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .orElseThrow(() -> new InvalidRoleException("Role not found in session"));
     }
 
-    @Transactional
     protected User createNewUser(String email, String name, String role) {
         Role userRole = parseAndValidateRole(role);
 
