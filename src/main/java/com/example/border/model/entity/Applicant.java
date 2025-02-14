@@ -2,10 +2,14 @@ package com.example.border.model.entity;
 
 import com.example.border.model.enums.Country;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 public class Applicant extends BaseEntity {
 
     private String firstName;
