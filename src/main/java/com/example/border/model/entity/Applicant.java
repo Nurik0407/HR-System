@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -15,7 +15,7 @@ public class Applicant extends BaseEntity {
     private String firstName;
     private String lastName;
 
-    private LocalDateTime birthDay;
+    private LocalDate birthDay;
     @Enumerated(EnumType.STRING)
     private Country country;
     private String city;
@@ -26,4 +26,8 @@ public class Applicant extends BaseEntity {
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
+    @JoinColumn(name = "proffessional_skills_id")
+    private ProfSkills profSkills;
 }

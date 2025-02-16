@@ -12,6 +12,7 @@ public record VerificationRequest(
         String email,
         @NotBlank(message = "Code is required")
         @Size(min = 6, max = 6)
+        @Schema(example = "123456")
         String code
 ) {
 }

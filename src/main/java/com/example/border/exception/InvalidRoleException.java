@@ -1,6 +1,8 @@
 package com.example.border.exception;
 
-public class InvalidRoleException extends RuntimeException {
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+
+public class InvalidRoleException extends OAuth2AuthenticationException {
     public InvalidRoleException(String message) {
         super(message);
     }

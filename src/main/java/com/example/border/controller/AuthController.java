@@ -72,5 +72,4 @@ public class AuthController {
         session.setAttribute("ROLE", role.toUpperCase());
         return "redirect:/oauth2/authorization/google";
     }
-
 }
