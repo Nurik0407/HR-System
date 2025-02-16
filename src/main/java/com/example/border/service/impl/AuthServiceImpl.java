@@ -8,12 +8,14 @@ import com.example.border.exception.UserAlreadyExistsException;
 import com.example.border.exception.VerificationCodeExpiredException;
 import com.example.border.model.dto.auth.AuthResponse;
 import com.example.border.model.dto.auth.EmployerLoginRequest;
-import com.example.border.model.dto.auth.EmployerRegisterRequest;
+import com.example.border.model.dto.auth.RegisterRequest;
 import com.example.border.model.dto.auth.VerificationRequest;
+import com.example.border.model.entity.Applicant;
 import com.example.border.model.entity.Employer;
 import com.example.border.model.entity.User;
 import com.example.border.model.entity.VerificationCode;
 import com.example.border.model.enums.Role;
+import com.example.border.repository.ApplicantRepository;
 import com.example.border.repository.EmployerRepository;
 import com.example.border.repository.UserRepository;
 import com.example.border.repository.VerificationCodeRepository;
@@ -45,9 +47,10 @@ public class AuthServiceImpl implements AuthService {
     private final EmployerRepository employerRepository;
     private final VerificationCodeRepository verificationCodeRepository;
     private final EmailService emailService;
+    private final ApplicantRepository applicantRepository;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenUtil jwtTokenUtil, AuthenticationManager authenticationManager, CustomUserDetailsService customUserDetailsService, EmployerRepository employerRepository,
-                           VerificationCodeRepository verificationCodeRepository, EmailService emailService) {
+                           VerificationCodeRepository verificationCodeRepository, EmailService emailService, ApplicantRepository applicantRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenUtil = jwtTokenUtil;
@@ -56,11 +59,12 @@ public class AuthServiceImpl implements AuthService {
         this.employerRepository = employerRepository;
         this.verificationCodeRepository = verificationCodeRepository;
         this.emailService = emailService;
+        this.applicantRepository = applicantRepository;
     }
 
     @Transactional
     @Override
-    public String register(EmployerRegisterRequest request) {
+    public String register(RegisterRequest request) {
         log.info("Registering user with email: {}", request.email());
 
         if (userRepository.findByEmail(request.email()).isPresent()) {
@@ -69,19 +73,33 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = new User();
-        Employer employer = new Employer();
-
-        employer.setName(request.name());
         user.setEmail(request.email());
-        user.setRole(Role.EMPLOYER);
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setHasPassword(true);
         user.setEnabled(false);
 
-        User savedUser = userRepository.save(user);
-        employer.setUser(savedUser);
-        employerRepository.save(employer);
-        sendVerificationCode(savedUser);
+        Role role = request.role();
+        user.setRole(role);
+
+        if (role == Role.EMPLOYER) {
+            Employer employer = new Employer();
+            employer.setName(request.name());
+            employer.setUser(user);
+            employerRepository.save(employer);
+        } else if (role == Role.APPLICANT) {
+            if (request.lastName() == null || request.lastName().isBlank()) {
+                log.warn("Last name is required for applicant with email: {}", request.email());
+                throw new IllegalArgumentException("Last name is required");
+            }
+
+            Applicant applicant = new Applicant();
+            applicant.setFirstName(request.name());
+            applicant.setLastName(request.lastName());
+            applicant.setUser(user);
+            applicantRepository.save(applicant);
+        }
+
+        sendVerificationCode(userRepository.save(user));
 
         log.info("User successfully registered with email: {}", request.email());
         return "Verification code sent to: " + request.email();
