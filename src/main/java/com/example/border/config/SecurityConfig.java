@@ -1,7 +1,8 @@
 package com.example.border.config;
 
 import com.example.border.config.jwt.JwtRequestFilter;
-import com.example.border.service.impl.CustomOAuth2UserService;
+import com.example.border.config.oauth2.CustomOAuth2UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -18,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -33,7 +35,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/api/v1/auth/**",
             "/oauth/**",
-            "/login/oauth2/code/google"
+            "/login/oauth2/code/google",
+            "/api/v1/auth/select-role",
     };
 
     public SecurityConfig(JwtRequestFilter jwtRequestFilter,
@@ -51,6 +54,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITE_LIST).permitAll()
+                        .requestMatchers("/api/v1/applicant").hasAnyAuthority("ADMIN", "APPLICANT")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -60,6 +64,10 @@ public class SecurityConfig {
                         )
                         .successHandler(authenticationSuccessHandler)
                 )
+                .exceptionHandling(e -> e
+                        .defaultAuthenticationEntryPointFor(((request, response, authException) ->
+                                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                                , new AntPathRequestMatcher("/api/**")))
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
