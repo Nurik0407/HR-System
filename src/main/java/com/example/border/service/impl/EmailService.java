@@ -18,7 +18,6 @@ public class EmailService {
     }
 
     public void sendEmail(String email, String code) {
-//        SimpleMailMessage message = new SimpleMailMessage();
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
             MimeMessageHelper message = new MimeMessageHelper(mimeMessage, true, "UTF-8");

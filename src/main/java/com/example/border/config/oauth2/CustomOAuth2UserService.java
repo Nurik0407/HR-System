@@ -1,4 +1,4 @@
-package com.example.border.service.impl;
+package com.example.border.config.oauth2;
 
 import com.example.border.exception.InvalidRoleException;
 import com.example.border.model.entity.Applicant;

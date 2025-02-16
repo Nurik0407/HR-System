@@ -4,6 +4,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +51,15 @@ public class JwtTokenUtil {
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
+    public String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            return ((UserDetails) authentication.getPrincipal()).getUsername();
+        }
+        return null;
+    }
+
     private boolean isTokenExpired(String token) {
         Date expirationDate = Jwts.parserBuilder()
                 .setSigningKey(getSecretKey())
@@ -62,5 +73,4 @@ public class JwtTokenUtil {
         byte[] encodedKey = Base64.getDecoder().decode(secret);
         return Keys.hmacShaKeyFor(encodedKey);
     }
-
 }
