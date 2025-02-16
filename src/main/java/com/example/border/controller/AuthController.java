@@ -2,7 +2,7 @@ package com.example.border.controller;
 
 import com.example.border.model.dto.auth.AuthResponse;
 import com.example.border.model.dto.auth.EmployerLoginRequest;
-import com.example.border.model.dto.auth.EmployerRegisterRequest;
+import com.example.border.model.dto.auth.RegisterRequest;
 import com.example.border.model.dto.auth.VerificationRequest;
 import com.example.border.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,7 +29,7 @@ public class AuthController {
             summary = "Регистрация пользователя",
             description = "Регистрация нового пользователя и отправка кода подтверждения на email."
     )
-    public ResponseEntity<String> register(@Valid @RequestBody EmployerRegisterRequest request) {
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
