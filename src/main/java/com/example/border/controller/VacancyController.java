@@ -6,6 +6,7 @@ import com.example.border.model.dto.employer.VacancyResponse;
 import com.example.border.model.enums.Status;
 import com.example.border.service.VacancyService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/vacancies")
+@Tag(name = "Вакансии работодателя")
 public class VacancyController {
 
     private final VacancyService vacancyService;
