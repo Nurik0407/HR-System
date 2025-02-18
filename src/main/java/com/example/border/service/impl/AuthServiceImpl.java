@@ -7,7 +7,7 @@ import com.example.border.exception.UserAlreadyEnabledException;
 import com.example.border.exception.UserAlreadyExistsException;
 import com.example.border.exception.VerificationCodeExpiredException;
 import com.example.border.model.dto.auth.AuthResponse;
-import com.example.border.model.dto.auth.EmployerLoginRequest;
+import com.example.border.model.dto.auth.LoginRequest;
 import com.example.border.model.dto.auth.RegisterRequest;
 import com.example.border.model.dto.auth.VerificationRequest;
 import com.example.border.model.entity.Applicant;
@@ -149,7 +149,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse login(EmployerLoginRequest request) {
+    public AuthResponse login(LoginRequest request) {
         log.info("Logging in user with email: {}", request.email());
 
         try {

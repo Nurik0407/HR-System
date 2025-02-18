@@ -1,7 +1,7 @@
 package com.example.border.controller;
 
 import com.example.border.model.dto.auth.AuthResponse;
-import com.example.border.model.dto.auth.EmployerLoginRequest;
+import com.example.border.model.dto.auth.LoginRequest;
 import com.example.border.model.dto.auth.RegisterRequest;
 import com.example.border.model.dto.auth.VerificationRequest;
 import com.example.border.service.AuthService;
@@ -58,7 +58,7 @@ public class AuthController {
             summary = "Авторизация",
             description = "Авторизация пользователя с получением JWT токена."
     )
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody EmployerLoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
