@@ -37,7 +37,7 @@ public class SecurityConfig {
             "/oauth/**",
             "/login/oauth2/code/google",
             "/api/v1/auth/select-role",
-            "/api/v1/applicant/vacancies",
+            "/api/v1//vacancies",
     };
 
     public SecurityConfig(JwtRequestFilter jwtRequestFilter,
@@ -56,7 +56,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITE_LIST).permitAll()
                         .requestMatchers("/api/v1/applicant").hasAnyAuthority("ADMIN", "APPLICANT")
-                        .requestMatchers("/api/v1/vacancies").hasAnyAuthority("ADMIN", "EMPLOYER")
+                        .requestMatchers("/api/v1/employers/vacancies").hasAnyAuthority("ADMIN", "EMPLOYER")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
