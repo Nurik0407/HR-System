@@ -38,7 +38,7 @@ public class VacancyController {
             @RequestParam(required = false) Status status,
             @RequestParam(required = false) String createdDateRange
     ) {
-        return ResponseEntity.ok(vacancyService.getVacancies(page, size, sort, searchQuery, status, createdDateRange));
+        return ResponseEntity.ok(vacancyService.getVacanciesTheEmployer(page, size, sort, searchQuery, status, createdDateRange));
     }
 
     @GetMapping("/{vacancyId}")
@@ -66,7 +66,7 @@ public class VacancyController {
     )
     public ResponseEntity<VacancyDto> updateVacancy(@PathVariable UUID vacancyId,
                                                     @Valid @RequestBody VacancyDto vacancyDto) {
-        return ResponseEntity.ok(vacancyService.updateVacancy(vacancyId,vacancyDto));
+        return ResponseEntity.ok(vacancyService.updateVacancy(vacancyId, vacancyDto));
     }
 
     @DeleteMapping("/{vacancyId}")

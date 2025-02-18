@@ -37,6 +37,7 @@ public class SecurityConfig {
             "/oauth/**",
             "/login/oauth2/code/google",
             "/api/v1/auth/select-role",
+            "/api/v1/applicant/vacancies",
     };
 
     public SecurityConfig(JwtRequestFilter jwtRequestFilter,

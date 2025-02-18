@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Formula;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -47,6 +48,12 @@ public class Vacancy extends BaseEntity {
     private Country country;
     private String city;
     private String contactInformation;
+
+    @Formula("CASE " +
+            "WHEN amount_type = 'FIXED' THEN fixed_amount " +
+            "WHEN amount_type = 'RANGE' THEN max_amount " +
+            "ELSE min_amount END")
+    private Integer amount;
 
     @ManyToOne
     @JoinColumn(name = "employer_id")

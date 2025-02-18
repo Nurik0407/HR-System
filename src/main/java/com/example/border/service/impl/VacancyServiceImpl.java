@@ -5,10 +5,10 @@ import com.example.border.exception.NotFoundException;
 import com.example.border.model.dto.employer.VacanciesResponseForEmployer;
 import com.example.border.model.dto.employer.VacancyDto;
 import com.example.border.model.dto.employer.VacancyResponse;
+import com.example.border.model.dto.vacancy.VacanciesResponse;
 import com.example.border.model.entity.Employer;
 import com.example.border.model.entity.Vacancy;
-import com.example.border.model.enums.AmountType;
-import com.example.border.model.enums.Status;
+import com.example.border.model.enums.*;
 import com.example.border.repository.EmployerRepository;
 import com.example.border.repository.VacancyRepository;
 import com.example.border.service.VacancyService;
@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -48,7 +49,7 @@ public class VacancyServiceImpl implements VacancyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<VacanciesResponseForEmployer> getVacancies(
+    public Page<VacanciesResponseForEmployer> getVacanciesTheEmployer(
             int page, int size, String sort,
             String searchQuery, Status status,
             String createdDateRange) {
@@ -57,12 +58,12 @@ public class VacancyServiceImpl implements VacancyService {
                 .orElseThrow(() -> new NotFoundException("Employer not found"));
         log.debug("Fetching vacancies for employer: {}", currentEmployer.getId());
 
-        Pageable pageable = createPageable(sort, page, size);
+        Pageable pageable = createPageableEmployer(sort, page, size);
         Specification<Vacancy> specification = buildSpecification(
                 currentEmployer.getId(), searchQuery, status, createdDateRange);
 
         return vacancyRepository.findAll(specification, pageable)
-                .map(this::toVacanciesResponse);
+                .map(this::toEmployerVacancyResponse);
     }
 
     @Override
@@ -222,7 +223,117 @@ public class VacancyServiceImpl implements VacancyService {
         return "Status changed successfully";
     }
 
-    private Pageable createPageable(String sort, int page, int size) {
+    @Override
+    public Page<VacanciesResponse> getAllVacancies(
+            String searchQuery,
+            Industry industry,
+            Position position,
+            Country country,
+            String city,
+            Experience experience,
+            EmploymentType employmentType,
+            String createdAtSort,
+            String amountSort,
+            int page,
+            int size) {
+
+        log.info("Fetching vacancies with filters: searchQuery={}, industry={}, position={}, country={}, city={}, experience={}, employmentType={}, createdAtSort={}, amountSort={}, page={}, size={}",
+                searchQuery, industry, position, country, city, experience, employmentType, createdAtSort, amountSort, page, size);
+
+        Specification<Vacancy> specification = buildSpecificationVacancies(searchQuery, industry,
+                position, country, city, experience, employmentType);
+
+
+        Pageable pageable = createPageable(createdAtSort, amountSort, page, size);
+
+        return vacancyRepository.findAll(specification, pageable)
+                .map(this::toVacancyResponse);
+    }
+
+    private Pageable createPageable(String createdAtSort, String amountSort, int page, int size) {
+        log.info("Creating pageable object with sorting: createdAtSort={}, amountSort={}, page={}, size={}",
+                createdAtSort, amountSort, page, size);
+
+        List<Sort.Order> orders = new ArrayList<>();
+
+        if (StringUtils.hasText(createdAtSort)) {
+            String[] params = createdAtSort.split(",");
+            if (params.length == 2) {
+                orders.add(new Sort.Order("asc".equalsIgnoreCase(params[1]) ? Sort.Direction.ASC : Sort.Direction.DESC, params[0]));
+            } else {
+                log.warn("Invalid createdAtSort parameter: {}", createdAtSort);
+                throw new IllegalArgumentException("Invalid createdAtSort parameter: " + createdAtSort);
+            }
+        }
+
+        if (StringUtils.hasText(amountSort)) {
+            String[] params = amountSort.split(",");
+            if (params.length == 2) {
+                orders.add(new Sort.Order("asc".equalsIgnoreCase(params[1]) ? Sort.Direction.ASC : Sort.Direction.DESC, params[0]));
+            } else {
+                log.warn("Invalid amountSort parameter: {}", amountSort);
+                throw new IllegalArgumentException("Invalid amountSort parameter: " + amountSort);
+            }
+        }
+
+        return PageRequest.of(page, size, Sort.by(orders));
+    }
+
+    private Specification<Vacancy> buildSpecificationVacancies(
+            String searchQuery,
+            Industry industry,
+            Position position,
+            Country country,
+            String city,
+            Experience experience,
+            EmploymentType employmentType) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            log.info("Building vacancy specifications with filters");
+
+            predicates.add(cb.equal(root.get("status"), Status.ACTIVE));
+
+            if (StringUtils.hasText(searchQuery)) {
+                String searchPattern = "%" + searchQuery.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("position")), searchPattern),
+                        cb.like(cb.lower(root.get("otherPosition")), searchPattern),
+                        cb.like(cb.lower(root.get("employer").get("name")), searchPattern),
+                        cb.like(cb.lower(root.get("industry")), searchPattern)
+                ));
+            }
+
+            if (industry != null) {
+                predicates.add(cb.equal(root.get("industry"), industry));
+            }
+
+            if (position != null) {
+                predicates.add(cb.equal(root.get("position"), position));
+            }
+
+            if (country != null) {
+                predicates.add(cb.equal(root.get("country"), country));
+            }
+
+            if (StringUtils.hasText(city)) {
+                predicates.add(cb.equal(root.get("city"), city));
+            }
+
+            if (experience != null) {
+                predicates.add(cb.equal(root.get("experience"), experience));
+            }
+
+            if (employmentType != null) {
+                predicates.add(cb.equal(root.get("employmentType"), employmentType));
+            }
+
+            log.info("Built {} predicates for vacancy search", predicates.size());
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private Pageable createPageableEmployer(String sort, int page, int size) {
         Sort sortConfig;
 
         if (sort != null && !sort.isBlank()) {
@@ -269,7 +380,7 @@ public class VacancyServiceImpl implements VacancyService {
             }
 
             if (status != null) {
-                predicates.add(root.get("status").in(status));
+                predicates.add(cb.equal(root.get("status"), status));
             }
 
             if (createdDateRange != null) {
@@ -292,11 +403,11 @@ public class VacancyServiceImpl implements VacancyService {
         };
     }
 
-    private VacanciesResponseForEmployer toVacanciesResponse(Vacancy vacancy) {
+    private VacanciesResponseForEmployer toEmployerVacancyResponse(Vacancy vacancy) {
         return new VacanciesResponseForEmployer(
                 vacancy.getId(),
-                vacancy.getPosition() == null ?
-                        vacancy.getOtherPosition() : vacancy.getPosition().toString(),
+                vacancy.isOtherPositionSelected() ?
+                        vacancy.getOtherPosition() : Objects.requireNonNull(vacancy.getPosition()).toString(),
                 vacancy.getEmploymentType(),
                 vacancy.getAmountType(),
                 vacancy.getFixedAmount(),
@@ -306,6 +417,25 @@ public class VacancyServiceImpl implements VacancyService {
                 vacancy.getApplicationsCount(),
                 vacancy.getCreatedAt(),
                 vacancy.getStatus()
+        );
+    }
+
+    private VacanciesResponse toVacancyResponse(Vacancy vacancy) {
+        return new VacanciesResponse(
+                vacancy.getEmployer().getName(),
+                vacancy.getEmployer().getLogoUrl(),
+                vacancy.getCountry(),
+                vacancy.getCity(),
+                vacancy.isOtherPositionSelected() ?
+                        vacancy.getOtherPosition() : Objects.requireNonNull(vacancy.getPosition()).toString(),
+                vacancy.getIndustry(),
+                vacancy.getAmountType(),
+                vacancy.getFixedAmount(),
+                vacancy.getMaxAmount(),
+                vacancy.getMinAmount(),
+                vacancy.getCurrency(),
+                vacancy.getEmploymentType(),
+                vacancy.getExperience()
         );
     }
 }
