@@ -33,14 +33,10 @@ public class User extends BaseEntity implements UserDetails {
     @OneToOne(mappedBy = "user")
     Applicant applicant;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    private List<VacancyApplication> vacancyApplications;
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));  // Используем SimpleGrantedAuthority
     }
-
 
     @Override
     public String getPassword() {

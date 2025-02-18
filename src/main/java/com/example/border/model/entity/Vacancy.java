@@ -3,11 +3,17 @@ package com.example.border.model.entity;
 import com.example.border.model.enums.*;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
 public class Vacancy extends BaseEntity {
 
     @Nullable
@@ -28,6 +34,7 @@ public class Vacancy extends BaseEntity {
     private BigDecimal maxAmount;
     @Enumerated(EnumType.STRING)
     private Currency currency;
+    private int applicationsCount;
 
     @Enumerated(EnumType.STRING)
     private EmploymentType employmentType;
@@ -36,7 +43,40 @@ public class Vacancy extends BaseEntity {
     private String additionalInfo;
     @Enumerated(EnumType.STRING)
     private Status status;
+    @Enumerated(EnumType.STRING)
+    private Country country;
+    private String city;
+    private String contactInformation;
 
-    @OneToMany(mappedBy = "vacancy", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @ManyToOne
+    @JoinColumn(name = "employer_id")
+    private Employer employer;
+
+    @OneToMany(mappedBy = "vacancy", cascade = CascadeType.ALL, orphanRemoval = true)
     List<VacancyApplication> vacancyApplications;
+
+    public Vacancy(@Nullable Position position, boolean isOtherPositionSelected, @Nullable String otherPosition,
+                   Industry industry, String vacancyDescription, String requiredSkills,
+                   AmountType amountType, BigDecimal fixedAmount, BigDecimal maxAmount,
+                   BigDecimal minAmount, Currency currency, EmploymentType employmentType,
+                   Experience experience, Country country, String city,
+                   String contactInformation, String additionalInfo) {
+        this.position = position;
+        this.isOtherPositionSelected = isOtherPositionSelected;
+        this.otherPosition = otherPosition;
+        this.industry = industry;
+        this.vacancyDescription = vacancyDescription;
+        this.requiredSkills = requiredSkills;
+        this.amountType = amountType;
+        this.fixedAmount = fixedAmount;
+        this.maxAmount = maxAmount;
+        this.minAmount = minAmount;
+        this.currency = currency;
+        this.employmentType = employmentType;
+        this.experience = experience;
+        this.country = country;
+        this.city = city;
+        this.contactInformation = contactInformation;
+        this.additionalInfo = additionalInfo;
+    }
 }

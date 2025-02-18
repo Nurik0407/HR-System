@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Getter
@@ -30,4 +31,7 @@ public class Applicant extends BaseEntity {
     @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     @JoinColumn(name = "proffessional_skills_id")
     private ProfSkills profSkills;
+
+    @OneToMany(mappedBy = "applicant", cascade = CascadeType.ALL)
+    private List<VacancyApplication> vacancyApplications;
 }

@@ -6,14 +6,16 @@ import jakarta.persistence.*;
 @Entity
 public class VacancyApplication extends BaseEntity {
 
+    private String coverLetter;
+
     @Enumerated(EnumType.STRING)
     private ApplicationStatus applicationStatus;
 
     @ManyToOne
     @JoinColumn(name = "vacancy_id")
-    Vacancy vacancy;
+    private Vacancy vacancy;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    User user;
+    @JoinColumn(name = "applicant_id")
+    private Applicant applicant;
 }
