@@ -2,9 +2,11 @@ package com.example.border.service.impl;
 
 import com.example.border.config.jwt.JwtTokenUtil;
 import com.example.border.exception.NotFoundException;
+import com.example.border.exception.UnauthorizedAccessException;
 import com.example.border.model.dto.employer.VacanciesResponseForEmployer;
 import com.example.border.model.dto.employer.VacancyDto;
 import com.example.border.model.dto.employer.VacancyResponse;
+import com.example.border.model.dto.vacancy.SimilarVacanciesResponse;
 import com.example.border.model.dto.vacancy.VacanciesResponse;
 import com.example.border.model.entity.Employer;
 import com.example.border.model.entity.Vacancy;
@@ -15,21 +17,20 @@ import com.example.border.service.VacancyService;
 import jakarta.persistence.criteria.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class VacancyServiceImpl implements VacancyService {
@@ -49,13 +50,12 @@ public class VacancyServiceImpl implements VacancyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<VacanciesResponseForEmployer> getVacanciesTheEmployer(
+    public Page<VacanciesResponseForEmployer> getVacanciesForCurrentEmployer(
             int page, int size, String sort,
             String searchQuery, Status status,
             String createdDateRange) {
 
-        Employer currentEmployer = employerRepository.findByUserEmail(jwtTokenUtil.getCurrentUserEmail())
-                .orElseThrow(() -> new NotFoundException("Employer not found"));
+        Employer currentEmployer = currentEmployer();
         log.debug("Fetching vacancies for employer: {}", currentEmployer.getId());
 
         Pageable pageable = createPageableEmployer(sort, page, size);
@@ -68,45 +68,21 @@ public class VacancyServiceImpl implements VacancyService {
 
     @Override
     @Transactional(readOnly = true)
-    public VacancyResponse getVacancy(UUID vacancyId) {
+    public VacancyResponse getVacancyForCurrentEmployer(UUID vacancyId) {
 
         Vacancy vacancy = vacancyRepository.findById(vacancyId)
                 .orElseThrow(() -> new NotFoundException("Vacancy not found"));
-
         Employer vacancyEmployer = vacancy.getEmployer();
 
-        return new VacancyResponse(
-                vacancy.getId(),
-                vacancy.getCreatedAt().toLocalDate(),
-                vacancy.getPosition(),
-                vacancy.isOtherPositionSelected(),
-                vacancy.getOtherPosition(),
-                vacancy.getApplicationsCount(),
-                vacancyEmployer.getName(),
-                vacancyEmployer.getLogoUrl(),
-                vacancyEmployer.getAboutCompany(),
-                vacancy.getVacancyDescription(),
-                vacancy.getRequiredSkills(),
-                vacancy.getContactInformation(),
-                vacancy.getAdditionalInfo(),
-                vacancy.getStatus(),
-                vacancy.getCountry().toString() + ", " + vacancy.getCity(),
-                vacancy.getIndustry(),
-                vacancy.getEmploymentType(),
-                vacancy.getExperience(),
-                vacancy.getAmountType(),
-                vacancy.getFixedAmount(),
-                vacancy.getMaxAmount(),
-                vacancy.getMinAmount(),
-                vacancy.getCurrency()
-        );
+        checkIfUserHasAccessToVacancy(vacancyEmployer.getId(), currentEmployer().getId());
+
+        return toVacancyResponse(vacancy);
     }
 
     @Override
     @Transactional
     public String createVacancy(VacancyDto request) {
-        Employer currentEmployer = employerRepository.findByUserEmail(jwtTokenUtil.getCurrentUserEmail())
-                .orElseThrow(() -> new NotFoundException("Employer not found"));
+        Employer currentEmployer = currentEmployer();
         log.info("Creating new vacancy for employer: {}", currentEmployer.getId());
 
         Vacancy newVacancy = new Vacancy(
@@ -143,6 +119,8 @@ public class VacancyServiceImpl implements VacancyService {
     public VacancyDto updateVacancy(UUID vacancyId, VacancyDto vacancyDto) {
         Vacancy vacancy = vacancyRepository.findById(vacancyId)
                 .orElseThrow(() -> new NotFoundException("Vacancy not found"));
+
+        checkIfUserHasAccessToVacancy(vacancy.getEmployer().getId(), currentEmployer().getId());
 
         if (vacancyDto.position() != null) {
             vacancy.setPosition(vacancyDto.position());
@@ -207,6 +185,11 @@ public class VacancyServiceImpl implements VacancyService {
     @Override
     @Transactional
     public String deleteById(UUID vacancyId) {
+        Vacancy vacancy = vacancyRepository.findById(vacancyId)
+                .orElseThrow(() -> new NotFoundException("Vacancy not found"));
+
+        checkIfUserHasAccessToVacancy(vacancy.getEmployer().getId(), currentEmployer().getId());
+
         log.info("Deleting vacancy. ID: {}", vacancyId);
         vacancyRepository.deleteById(vacancyId);
         return "Vacancy with id: " + vacancyId + " successfully deleted";
@@ -217,6 +200,8 @@ public class VacancyServiceImpl implements VacancyService {
         Vacancy vacancy = vacancyRepository.findById(vacancyId)
                 .orElseThrow(() -> new NotFoundException("Vacancy not found"));
 
+        checkIfUserHasAccessToVacancy(vacancy.getEmployer().getId(), currentEmployer().getId());
+
         vacancy.setStatus(status);
         vacancyRepository.save(vacancy);
         log.info("Status changed to {} for vacancy ID: {}", status, vacancyId);
@@ -224,7 +209,7 @@ public class VacancyServiceImpl implements VacancyService {
     }
 
     @Override
-    public Page<VacanciesResponse> getAllVacancies(
+    public Page<VacanciesResponse> getActiveVacancies(
             String searchQuery,
             Industry industry,
             Position position,
@@ -247,7 +232,64 @@ public class VacancyServiceImpl implements VacancyService {
         Pageable pageable = createPageable(createdAtSort, amountSort, page, size);
 
         return vacancyRepository.findAll(specification, pageable)
-                .map(this::toVacancyResponse);
+                .map(this::toVacanciesResponse);
+    }
+
+    @Override
+    public VacancyResponse getVacancy(UUID vacancyId) {
+        Vacancy vacancy = vacancyRepository.findById(vacancyId)
+                .orElseThrow(() -> new NotFoundException("Vacancy not found"));
+        return toVacancyResponse(vacancy);
+    }
+
+    @Override
+    public Page<SimilarVacanciesResponse> findSimilarVacancies(UUID vacancyId, int size, int page) {
+        log.info("Starting to find similar vacancies for vacancy ID: {}", vacancyId);
+        Vacancy vacancy = vacancyRepository.findById(vacancyId)
+                .orElseThrow(() -> new NotFoundException("Vacancy not found"));
+
+        List<Vacancy> filteredVacancies = vacancyRepository.getVacanciesByPositionOrOtherPosition(
+                        vacancy.getPosition(),
+                        vacancy.getOtherPosition()).stream()
+                .filter(v -> !v.getId().equals(vacancyId))
+                .collect(Collectors.toList());
+
+        log.info("Found {} vacancies after filtering by position", filteredVacancies.size());
+
+        if (filteredVacancies.size() <= 2) {
+            return createPage(filteredVacancies, page, size);
+        }
+
+        filteredVacancies = filteredVacancies.stream()
+                .filter(v -> isSimilarByAmount(vacancy, v))
+                .collect(Collectors.toList());
+
+        if (filteredVacancies.size() <= 2) {
+            return createPage(filteredVacancies, page, size);
+        }
+
+        filteredVacancies = filteredVacancies.stream()
+                .filter(v -> v.getEmploymentType() == vacancy.getEmploymentType())
+                .collect(Collectors.toList());
+
+        if (filteredVacancies.size() <= 2) {
+            return createPage(filteredVacancies, page, size);
+        }
+
+        filteredVacancies = filteredVacancies.stream()
+                .filter(v -> v.getCountry() == vacancy.getCountry())
+                .collect(Collectors.toList());
+
+        return createPage(filteredVacancies, page, size);
+    }
+
+    private Page<SimilarVacanciesResponse> createPage(List<Vacancy> filteredVacancies, int page, int size) {
+        log.info("Creating page with {} vacancies for page number: {} and size: {}", filteredVacancies.size(), page, size);
+        List<SimilarVacanciesResponse> responseList = filteredVacancies.stream()
+                .map(this::mapToSimilarVacanciesResponse)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responseList, PageRequest.of(page, size), filteredVacancies.size());
     }
 
     private Pageable createPageable(String createdAtSort, String amountSort, int page, int size) {
@@ -420,10 +462,11 @@ public class VacancyServiceImpl implements VacancyService {
         );
     }
 
-    private VacanciesResponse toVacancyResponse(Vacancy vacancy) {
+    private VacanciesResponse toVacanciesResponse(Vacancy vacancy) {
         return new VacanciesResponse(
                 vacancy.getEmployer().getName(),
                 vacancy.getEmployer().getLogoUrl(),
+                vacancy.getId(),
                 vacancy.getCountry(),
                 vacancy.getCity(),
                 vacancy.isOtherPositionSelected() ?
@@ -436,6 +479,72 @@ public class VacancyServiceImpl implements VacancyService {
                 vacancy.getCurrency(),
                 vacancy.getEmploymentType(),
                 vacancy.getExperience()
+        );
+    }
+
+    private VacancyResponse toVacancyResponse(Vacancy vacancy) {
+        Employer vacancyEmployer = vacancy.getEmployer();
+        return new VacancyResponse(
+                vacancy.getId(),
+                vacancy.getCreatedAt().toLocalDate(),
+                vacancy.getPosition(),
+                vacancy.isOtherPositionSelected(),
+                vacancy.getOtherPosition(),
+                vacancy.getApplicationsCount(),
+                vacancyEmployer.getName(),
+                vacancyEmployer.getLogoUrl(),
+                vacancyEmployer.getAboutCompany(),
+                vacancy.getVacancyDescription(),
+                vacancy.getRequiredSkills(),
+                vacancy.getContactInformation(),
+                vacancy.getAdditionalInfo(),
+                vacancy.getStatus(),
+                vacancy.getCountry().toString() + ", " + vacancy.getCity(),
+                vacancy.getIndustry(),
+                vacancy.getEmploymentType(),
+                vacancy.getExperience(),
+                vacancy.getAmountType(),
+                vacancy.getFixedAmount(),
+                vacancy.getMaxAmount(),
+                vacancy.getMinAmount(),
+                vacancy.getCurrency()
+        );
+    }
+
+    private Employer currentEmployer() {
+        return employerRepository.findByUserEmail(jwtTokenUtil.getCurrentUserEmail())
+                .orElseThrow(() -> new NotFoundException("Employer not found"));
+    }
+
+    private void checkIfUserHasAccessToVacancy(UUID vacancyEmployerId, UUID currentEmployerId) {
+        if (!currentEmployerId.equals(vacancyEmployerId)) {
+            throw new UnauthorizedAccessException("You are not authorized to access this vacancy.");
+        }
+    }
+
+    private boolean isSimilarByAmount(Vacancy vacancy, Vacancy other) {
+        BigDecimal thisAmount = vacancy.getAmount() != null ? BigDecimal.valueOf(vacancy.getAmount()) : BigDecimal.ZERO;
+        BigDecimal otherAmount = other.getAmount() != null ? BigDecimal.valueOf(other.getAmount()) : BigDecimal.ZERO;
+
+        // Разница в зарплате не должна превышать 20%
+        BigDecimal lowerBound = thisAmount.multiply(BigDecimal.valueOf(0.8));
+        BigDecimal upperBound = thisAmount.multiply(BigDecimal.valueOf(1.2));
+
+        return otherAmount.compareTo(lowerBound) >= 0 && otherAmount.compareTo(upperBound) <= 0;
+    }
+
+    private SimilarVacanciesResponse mapToSimilarVacanciesResponse(Vacancy vacancy) {
+        return new SimilarVacanciesResponse(
+                vacancy.getId(),
+                vacancy.getEmployer().getName(),
+                vacancy.getPosition() != null ? vacancy.getPosition().name() : vacancy.getOtherPosition(),
+                vacancy.getAmountType(),
+                vacancy.getFixedAmount(),
+                vacancy.getMinAmount(),
+                vacancy.getMaxAmount(),
+                vacancy.getEmploymentType(),
+                vacancy.getCountry(),
+                vacancy.getCity()
         );
     }
 }

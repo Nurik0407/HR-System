@@ -4,12 +4,15 @@ import com.example.border.model.enums.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record VacanciesResponse(
         String companyName,
+        @JsonInclude(JsonInclude.Include.ALWAYS)
         String logoUrl,
 
+        UUID vacancyId,
         Country country,
         String city,
         String position,
@@ -25,6 +28,7 @@ public record VacanciesResponse(
     public VacanciesResponse(
             String companyName,
             String logoUrl,
+            UUID vacancyId,
             Country country,
             String city,
             String position,
@@ -38,6 +42,7 @@ public record VacanciesResponse(
             Experience experience) {
         this.companyName = companyName;
         this.logoUrl = logoUrl;
+        this.vacancyId = vacancyId;
         this.country = country;
         this.city = city;
         this.position = position;

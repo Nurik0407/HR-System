@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/employers/vacancies")
-@Tag(name = "Вакансии работодателя")
+@Tag(name = "Вакансии работодателя", description = "API для работы с вакансиями текущего работодателя")
 public class EmployerVacancyController {
 
     private final VacancyService vacancyService;
@@ -38,7 +38,7 @@ public class EmployerVacancyController {
             @RequestParam(required = false) Status status,
             @RequestParam(required = false) String createdDateRange
     ) {
-        return ResponseEntity.ok(vacancyService.getVacanciesTheEmployer(page, size, sort, searchQuery, status, createdDateRange));
+        return ResponseEntity.ok(vacancyService.getVacanciesForCurrentEmployer(page, size, sort, searchQuery, status, createdDateRange));
     }
 
     @GetMapping("/{vacancyId}")
@@ -47,7 +47,7 @@ public class EmployerVacancyController {
             description = "Получение детальной информации о вакансии по её уникальному ID."
     )
     public ResponseEntity<VacancyResponse> getVacancy(@PathVariable UUID vacancyId) {
-        return ResponseEntity.ok(vacancyService.getVacancy(vacancyId));
+        return ResponseEntity.ok(vacancyService.getVacancyForCurrentEmployer(vacancyId));
     }
 
     @PostMapping

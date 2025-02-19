@@ -99,4 +99,14 @@ public class GlobalExceptionHandler {
                 e.getMessage()
         );
     }
+
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ExceptionResponse handleUnauthorizedAccessException(UnauthorizedAccessException e) {
+        return new ExceptionResponse(
+                HttpStatus.FORBIDDEN,
+                e.getClass().getSimpleName(),
+                e.getMessage()
+        );
+    }
 }
