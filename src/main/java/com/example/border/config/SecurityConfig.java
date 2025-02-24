@@ -39,6 +39,7 @@ public class SecurityConfig {
             "/api/v1/auth/select-role",
 
             "/api/v1/vacancies/**",
+            "/ws/**"
     };
 
     public SecurityConfig(JwtRequestFilter jwtRequestFilter,
@@ -58,6 +59,9 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_WHITE_LIST).permitAll()
                         .requestMatchers("/api/v1/applicant").hasAnyAuthority("ADMIN", "APPLICANT")
                         .requestMatchers("/api/v1/employers/vacancies").hasAnyAuthority("ADMIN", "EMPLOYER")
+
+                        .requestMatchers("/api/v1/vacancy/applications").permitAll()
+
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

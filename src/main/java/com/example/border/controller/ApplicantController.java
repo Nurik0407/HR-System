@@ -37,7 +37,7 @@ public class ApplicantController {
             summary = "Обновление данных соискателя",
             description = "Обновляет информацию текущего соискателя."
     )
-    public ResponseEntity<ApplicantDto> updateApplication(
+    public ResponseEntity<ApplicantDto> updateApplicant(
             @Valid @RequestBody ApplicantDto applicantDto) {
         return ResponseEntity.ok(applicantService.updateCurrentApplicant(applicantDto));
     }

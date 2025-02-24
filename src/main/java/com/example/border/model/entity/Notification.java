@@ -1,6 +1,6 @@
 package com.example.border.model.entity;
 
-import com.example.border.model.enums.ApplicationStatus;
+import com.example.border.model.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,16 +8,15 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-public class VacancyApplication extends BaseEntity {
+public class Notification extends BaseEntity {
 
-    private String coverLetter;
-
+    private String message;
     @Enumerated(EnumType.STRING)
-    private ApplicationStatus applicationStatus;
+    private NotificationType notificationType;
 
     @ManyToOne
-    @JoinColumn(name = "vacancy_id")
-    private Vacancy vacancy;
+    @JoinColumn(name = "employer_id")
+    private Employer employer;
 
     @ManyToOne
     @JoinColumn(name = "applicant_id")

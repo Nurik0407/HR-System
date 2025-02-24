@@ -1,6 +1,7 @@
 package com.example.border.config.jwt;
 
 import com.example.border.exception.NotFoundException;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,9 +38,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = authorizationHeader.substring(7);
-        String email = jwtTokenUtil.getUsernameFromToken(token);
         try {
+            String token = authorizationHeader.substring(7);
+            String email = jwtTokenUtil.getUsernameFromToken(token);
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
                 if (jwtTokenUtil.validateToken(token, userDetails)) {
@@ -52,6 +53,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         } catch (NotFoundException e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
             return;
+        } catch (ExpiredJwtException e){
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Token is expired");
         }
         filterChain.doFilter(request, response);
     }

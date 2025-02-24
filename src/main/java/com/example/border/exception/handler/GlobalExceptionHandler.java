@@ -109,4 +109,14 @@ public class GlobalExceptionHandler {
                 e.getMessage()
         );
     }
+
+    @ExceptionHandler(ApplicationAlreadySubmittedException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ExceptionResponse handleApplicationAlreadySubmittedException(ApplicationAlreadySubmittedException e) {
+        return new ExceptionResponse(
+                HttpStatus.CONFLICT,
+                e.getClass().getSimpleName(),
+                e.getMessage()
+        );
+    }
 }
