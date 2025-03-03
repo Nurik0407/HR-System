@@ -7,8 +7,16 @@ import com.example.border.model.entity.Employer;
 
 import java.util.UUID;
 
-public interface ChatService {
+public interface ChatRoomService {
     ChatRoom getOrCreateChat(Applicant currentApplicant, Employer employer);
 
-    String sendMessage(UUID chatId,MessageRequest request);
+    void sendMessage(UUID chatId, MessageRequest request);
+
+    ChatRoom findChatById(UUID chatId);
+
+    void updateLastMessageAndTimestamp(ChatRoom chatRoom, String content);
+
+    void findChatList(boolean onlyUnread, String nameSearch);
+
+    void getUnreadChatCount();
 }

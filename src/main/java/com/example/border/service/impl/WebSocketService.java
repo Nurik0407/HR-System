@@ -2,9 +2,8 @@ package com.example.border.service.impl;
 
 import com.example.border.model.dto.chat.ChatListResponse;
 import com.example.border.model.dto.message.MessageResponse;
+import com.example.border.model.dto.notification.NotificationsResponse;
 import com.example.border.model.entity.ChatMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +13,6 @@ import java.util.UUID;
 @Service
 public class WebSocketService {
 
-    private final Logger log = LoggerFactory.getLogger(WebSocketService.class);
     private final SimpMessagingTemplate messagingTemplate;
 
     public WebSocketService(SimpMessagingTemplate messagingTemplate) {
@@ -23,7 +21,7 @@ public class WebSocketService {
 
     public void sendMessage(ChatMessage chatMessage) {
         messagingTemplate.convertAndSend(
-                "/topic/chat/" + chatMessage.getChatRoom().getId(),
+                "/queue/chat/" + chatMessage.getChatRoom().getId(),
                 new MessageResponse(
                         chatMessage.getId(),
                         chatMessage.getSender().getId(),
@@ -33,29 +31,37 @@ public class WebSocketService {
                 ));
     }
 
-    public void notifyChatListUpdate(UUID recipientId, List<ChatListResponse> chatListResponse) {
-        log.info("notifyChatListUpdate size: {} ", chatListResponse.size());
-        log.info("notifyChatListUpdate: {}", chatListResponse);
-        log.info("recipientId: {}", recipientId);
-        messagingTemplate.convertAndSendToUser(
-                recipientId.toString(),
-                "/queue/chatListUpdate",
+    public void chatList(UUID userId, List<ChatListResponse> chatListResponse) {
+        messagingTemplate.convertAndSend(
+                "/queue/chats/" + userId,
                 chatListResponse
         );
     }
 
-    public void notify(UUID recipientId, String message) {
-        log.info("Notification   message: {}", message);
-        messagingTemplate.convertAndSendToUser(
-                recipientId.toString(),
-                "/queue/notifications",
-                message);
+    public void unreadChatCount(int unreadChatsTotal, UUID userId) {
+        messagingTemplate.convertAndSend(
+                "/queue/chats/unread/" + userId,
+                unreadChatsTotal
+        );
     }
 
-//    public void notify(UUID recipientId, String message) {
-//        messagingTemplate.convertAndSend(
-//                "/topic/notification/" + recipientId,
-//                message
-//        );
-//    }
+    public void chatMessages(UUID chatRoomId, List<MessageResponse> chatMessages) {
+        messagingTemplate.convertAndSend(
+                "/queue/" + chatRoomId + "/messages",
+                chatMessages
+        );
+    }
+
+    public void notify(UUID recipientUserId, List<NotificationsResponse> notificationsResponse) {
+        messagingTemplate.convertAndSend(
+                "/queue/notifications/" + recipientUserId,
+                notificationsResponse);
+    }
+
+    public void unreadNotificationsCount(int unreadNotificationsTotal, UUID recipientUserId) {
+        messagingTemplate.convertAndSend(
+                "/queue/notifications/unread/" + recipientUserId,
+                unreadNotificationsTotal
+        );
+    }
 }

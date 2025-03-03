@@ -1,16 +1,18 @@
-package com.example.border.config;
+package com.example.border.config.websocket;
 
+import com.example.border.config.jwt.JwtChannelInterceptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.messaging.converter.DefaultContentTypeResolver;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.converter.MessageConverter;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 
 import java.util.List;
 
@@ -18,9 +20,15 @@ import java.util.List;
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private final JwtChannelInterceptor jwtChannelInterceptor;
+
+    public WebSocketConfig(JwtChannelInterceptor jwtChannelInterceptor) {
+        this.jwtChannelInterceptor = jwtChannelInterceptor;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic","/queue");
+        config.enableSimpleBroker("/topic", "/queue");
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
     }
@@ -28,6 +36,23 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
+                .setHandshakeHandler(new DefaultHandshakeHandler() {
+
+//                    public boolean beforeHandshake(
+//                            ServerHttpRequest request,
+//                            ServerHttpResponse response,
+//                            WebSocketHandler wsHandler,
+//                            Map attributes) throws Exception {
+//
+//                        if (request instanceof ServletServerHttpRequest servletRequest) {
+//                            HttpSession session = servletRequest
+//                                    .getServletRequest().getSession();
+//                            attributes.put("sessionId", session.getId());
+//                        }
+//                        return true;
+//                    }
+                                     }
+                )
                 .setAllowedOrigins("http://127.0.0.1:5500")
                 .withSockJS();
     }
@@ -41,5 +66,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         converter.setContentTypeResolver(resolver);
         messageConverters.add(converter);
         return false;
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(jwtChannelInterceptor);
     }
 }

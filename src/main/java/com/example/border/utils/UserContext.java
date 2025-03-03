@@ -6,7 +6,6 @@ import com.example.border.model.entity.User;
 import com.example.border.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -35,8 +34,11 @@ public class UserContext {
                 throw new UnauthorizedAccessException("Имя пользователя не найдено!");
             }
 
-            return userRepository.findByEmail(email)
+            User currentUser = userRepository.findByEmail(email)
                     .orElseThrow(() -> new NotFoundException("Пользователь не найден!"));
+
+            logger.info("Current user: {}", currentUser.getEmail());
+            return currentUser;
         } catch (UnauthorizedAccessException | NotFoundException e) {
             logger.error("Ошибка получения текущего пользователя: {}", e.getMessage());
             throw e;

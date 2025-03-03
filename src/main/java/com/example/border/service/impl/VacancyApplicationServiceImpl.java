@@ -12,8 +12,7 @@ import com.example.border.model.enums.NotificationType;
 import com.example.border.repository.ApplicantRepository;
 import com.example.border.repository.VacancyApplicationRepository;
 import com.example.border.repository.VacancyRepository;
-import com.example.border.service.ChatMessageService;
-import com.example.border.service.ChatService;
+import com.example.border.service.ChatRoomService;
 import com.example.border.service.NotificationService;
 import com.example.border.service.VacancyApplicationService;
 import org.springframework.stereotype.Service;
@@ -28,19 +27,15 @@ public class VacancyApplicationServiceImpl implements VacancyApplicationService 
     private final VacancyRepository vacancyRepository;
     private final ApplicantRepository applicantRepository;
     private final NotificationService notificationService;
-    private final WebSocketService webSocketService;
-    private final ChatService chatService;
-    private final ChatMessageService chatMessageService;
+    private final ChatRoomService chatRoomService;
 
-    public VacancyApplicationServiceImpl(VacancyApplicationRepository applicationRepository, JwtTokenUtil jwtTokenUtil, VacancyRepository vacancyRepository, ApplicantRepository applicantRepository, NotificationService notificationService, WebSocketService webSocketService, ChatService chatService, ChatMessageService chatMessageService) {
+    public VacancyApplicationServiceImpl(VacancyApplicationRepository applicationRepository, JwtTokenUtil jwtTokenUtil, VacancyRepository vacancyRepository, ApplicantRepository applicantRepository, NotificationService notificationService, ChatRoomService chatRoomService) {
         this.applicationRepository = applicationRepository;
         this.jwtTokenUtil = jwtTokenUtil;
         this.vacancyRepository = vacancyRepository;
         this.applicantRepository = applicantRepository;
         this.notificationService = notificationService;
-        this.webSocketService = webSocketService;
-        this.chatService = chatService;
-        this.chatMessageService = chatMessageService;
+        this.chatRoomService = chatRoomService;
     }
 
     @Override
@@ -72,17 +67,17 @@ public class VacancyApplicationServiceImpl implements VacancyApplicationService 
         notificationService.createNotification(
                 null, employer, message, NotificationType.APPLICATION);
 
-        ChatRoom chatRoom = chatService.getOrCreateChat(currentApplicant, employer);
+        ChatRoom chatRoom = chatRoomService.getOrCreateChat(currentApplicant, employer);
 
-        chatService.sendMessage(chatRoom.getId(),
+        chatRoomService.sendMessage(chatRoom.getId(),
                 new MessageRequest(
                         currentApplicant.getUser().getId(),
                         employer.getUser().getId(),
                         request.coverLetter(),
-                        MessageType.COVER_LETTER
+                        MessageType.TEXT
                 ));
 
-        chatService.sendMessage(chatRoom.getId(),
+        chatRoomService.sendMessage(chatRoom.getId(),
                 new MessageRequest(
                         currentApplicant.getUser().getId(),
                         employer.getUser().getId(),

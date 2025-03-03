@@ -6,9 +6,11 @@ import java.util.UUID;
 public record ChatListResponse(
         UUID chatId,
         UUID receiverId,
+        UUID senderId,
         String profileImageUrl,
         String name,
         String lastMessage,
-        LocalDateTime lastMessageTimestamp
+        LocalDateTime lastMessageTimestamp,
+        int unreadMessagesCount
 ) {
 }

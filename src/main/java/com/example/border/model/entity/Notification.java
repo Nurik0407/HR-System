@@ -13,6 +13,7 @@ public class Notification extends BaseEntity {
     private String message;
     @Enumerated(EnumType.STRING)
     private NotificationType notificationType;
+    private boolean isRead = false;
 
     @ManyToOne
     @JoinColumn(name = "employer_id")
