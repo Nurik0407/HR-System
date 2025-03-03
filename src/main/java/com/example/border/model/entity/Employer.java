@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -27,4 +28,7 @@ public class Employer extends BaseEntity {
 
     @OneToMany(mappedBy = "employer", cascade = CascadeType.ALL)
     private List<Vacancy> vacancies;
+
+    @OneToMany(mappedBy = "employer")
+    private List<Notification> notifications = new ArrayList<>();
 }

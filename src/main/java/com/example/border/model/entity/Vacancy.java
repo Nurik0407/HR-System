@@ -60,7 +60,7 @@ public class Vacancy extends BaseEntity {
     private Employer employer;
 
     @OneToMany(mappedBy = "vacancy", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<VacancyApplication> vacancyApplications;
+    List<VacancyApplication> applications;
 
     public Vacancy(@Nullable Position position, boolean isOtherPositionSelected, @Nullable String otherPosition,
                    Industry industry, String vacancyDescription, String requiredSkills,

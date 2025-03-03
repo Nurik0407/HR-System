@@ -1,5 +1,6 @@
 package com.example.border.config.jwt;
 
+import com.example.border.model.entity.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -10,10 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class JwtTokenUtil {
@@ -27,6 +25,8 @@ public class JwtTokenUtil {
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
+        UUID userId = ((User) userDetails).getId();
+        claims.put("userId", userId);
 
         return Jwts.builder()
                 .setClaims(claims)
