@@ -2,6 +2,7 @@ package com.example.border.service.impl;
 
 import com.example.border.config.helper.CustomUserDetailsService;
 import com.example.border.config.jwt.JwtTokenUtil;
+import com.example.border.controller.PasswordChangeRequest;
 import com.example.border.exception.NotFoundException;
 import com.example.border.exception.UserAlreadyEnabledException;
 import com.example.border.exception.UserAlreadyExistsException;
@@ -20,6 +21,7 @@ import com.example.border.repository.EmployerRepository;
 import com.example.border.repository.UserRepository;
 import com.example.border.repository.VerificationCodeRepository;
 import com.example.border.service.AuthService;
+import com.example.border.utils.UserContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,9 +50,10 @@ public class AuthServiceImpl implements AuthService {
     private final VerificationCodeRepository verificationCodeRepository;
     private final EmailService emailService;
     private final ApplicantRepository applicantRepository;
+    private final UserContext userContext;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenUtil jwtTokenUtil, AuthenticationManager authenticationManager, CustomUserDetailsService customUserDetailsService, EmployerRepository employerRepository,
-                           VerificationCodeRepository verificationCodeRepository, EmailService emailService, ApplicantRepository applicantRepository) {
+                           VerificationCodeRepository verificationCodeRepository, EmailService emailService, ApplicantRepository applicantRepository, UserContext userContext) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenUtil = jwtTokenUtil;
@@ -60,6 +63,7 @@ public class AuthServiceImpl implements AuthService {
         this.verificationCodeRepository = verificationCodeRepository;
         this.emailService = emailService;
         this.applicantRepository = applicantRepository;
+        this.userContext = userContext;
     }
 
     @Transactional
@@ -173,6 +177,33 @@ public class AuthServiceImpl implements AuthService {
             log.error("Authentication error for the user: {} - {}", request.email(), e.getMessage());
             throw new BadCredentialsException("Invalid email or password!");
         }
+    }
+
+    @Override
+    public String changePassword(PasswordChangeRequest request) {
+        User currentUser = userContext.getCurrentUser();
+        log.info("Attempting to change password for user: {}", currentUser.getEmail());
+
+        if (currentUser.isHasPassword()) {
+            log.info("Old password request: '{}'", request.oldPassword());
+            if (request.oldPassword() != null &&
+                    !passwordEncoder.matches(request.oldPassword(), currentUser.getPassword())) {
+                log.error("Old password does not match for user: {}", currentUser.getEmail());
+                throw new BadCredentialsException("Old password does not match!");
+            }
+        }
+
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            log.error("New password and confirmation do not match for user: {}", currentUser.getEmail());
+            throw new IllegalArgumentException("New password and confirmation do not match.");
+        }
+
+        currentUser.setHasPassword(true);
+        currentUser.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(currentUser);
+
+        log.info("Password successfully changed for user: {}", currentUser.getEmail());
+        return "Password changed successfully";
     }
 
     private void sendVerificationCode(User user) {

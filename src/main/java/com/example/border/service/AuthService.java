@@ -1,5 +1,6 @@
 package com.example.border.service;
 
+import com.example.border.controller.PasswordChangeRequest;
 import com.example.border.model.dto.auth.AuthResponse;
 import com.example.border.model.dto.auth.LoginRequest;
 import com.example.border.model.dto.auth.RegisterRequest;
@@ -14,4 +15,6 @@ public interface AuthService {
     String resendVerificationCode(String email);
 
     String confirmUserAccount(VerificationRequest request);
+
+    String changePassword(PasswordChangeRequest request);
 }

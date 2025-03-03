@@ -72,9 +72,12 @@ public class SecurityConfig {
                         .successHandler(authenticationSuccessHandler)
                 )
                 .exceptionHandling(e -> e
-                        .defaultAuthenticationEntryPointFor(((request, response, authException) ->
-                                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
-                                , new AntPathRequestMatcher("/api/**")))
+                        .defaultAuthenticationEntryPointFor(((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write("{\"message\": \"Unauthorized: Доступ запрещён\"}");
+                        }), new AntPathRequestMatcher("/api/**")))
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

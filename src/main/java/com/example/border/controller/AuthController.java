@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -71,5 +72,11 @@ public class AuthController {
                              HttpSession session) {
         session.setAttribute("ROLE", role.toUpperCase());
         return "redirect:/oauth2/authorization/google";
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(@RequestBody PasswordChangeRequest request) {
+        return ResponseEntity.ok(authService.changePassword(request));
     }
 }
