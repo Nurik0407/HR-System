@@ -38,8 +38,8 @@ public class SecurityConfig {
             "/login/oauth2/code/google",
             "/api/v1/auth/select-role",
 
-            "/api/v1/vacancies/**"
-            , "/ws/**"
+            "/api/v1/vacancies/**",
+            "/ws/**"
     };
 
     public SecurityConfig(JwtRequestFilter jwtRequestFilter,
