@@ -24,6 +24,8 @@ spring:
             scope:
               - email
               - profile
+  jpa:
+    open-in-view: false
 
 # Jwt
 jwt:
