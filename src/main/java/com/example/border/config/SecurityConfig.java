@@ -60,7 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/applicant").hasAnyAuthority("ADMIN", "APPLICANT")
                         .requestMatchers("/api/v1/employers/vacancies").hasAnyAuthority("ADMIN", "EMPLOYER")
 
-                        .requestMatchers("/api/v1/vacancy/applications").permitAll()
+                        .requestMatchers("/api/v1/vacancy/applications").hasAnyAuthority("ADMIN", "APPLICANT")
 
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
