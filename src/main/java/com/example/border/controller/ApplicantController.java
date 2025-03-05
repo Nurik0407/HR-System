@@ -1,15 +1,14 @@
 package com.example.border.controller;
 
 import com.example.border.model.dto.applicant.ApplicantDto;
-import com.example.border.model.dto.vacancy.VacanciesResponse;
-import com.example.border.model.enums.*;
+import com.example.border.model.entity.User;
 import com.example.border.service.ApplicantService;
-import com.example.border.service.VacancyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,8 +27,9 @@ public class ApplicantController {
             summary = "Получение данных соискателя",
             description = "Возвращает данные текущего соискателя."
     )
-    public ResponseEntity<ApplicantDto> getProfile() {
-        return ResponseEntity.ok(applicantService.findCurrentApplicant());
+    public ResponseEntity<ApplicantDto> getProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = (User) userDetails;
+        return ResponseEntity.ok(applicantService.getApplicantById(user.getApplicant().getId()));
     }
 
     @PutMapping

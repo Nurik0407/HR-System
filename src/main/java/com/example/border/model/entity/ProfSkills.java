@@ -1,5 +1,6 @@
 package com.example.border.model.entity;
 
+import com.example.border.model.enums.Experience;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,6 +16,7 @@ public class ProfSkills extends BaseEntity {
     private String aboutMe;
     @Column(name = "cv_url")
     private String CVUrl;
+    private Experience experience;
 
     @OneToOne(mappedBy = "profSkills")
     private Applicant applicant;

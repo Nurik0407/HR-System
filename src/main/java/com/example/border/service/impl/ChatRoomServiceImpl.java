@@ -48,20 +48,20 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
 
     @Override
-    public ChatRoom getOrCreateChat(Applicant currentApplicant, Employer employer) {
-        return chatRoomRepository.findByEmployerAndApplicant(employer, currentApplicant)
+    public ChatRoom getOrCreateChat(Applicant applicant, Employer employer) {
+        return chatRoomRepository.findByEmployerAndApplicant(employer, applicant)
                 .orElseGet(() -> {
                     log.info("Creating new chat between Applicant: {} and Employer: {}",
-                            currentApplicant.getId(), employer.getId());
+                            applicant.getId(), employer.getId());
 
                     ChatRoom newChatRoom = new ChatRoom();
-                    newChatRoom.setApplicant(currentApplicant);
+                    newChatRoom.setApplicant(applicant);
                     newChatRoom.setEmployer(employer);
 
                     ChatRoom savedChatRoom = chatRoomRepository.save(newChatRoom);
                     log.info("New chat created with ID: {}", savedChatRoom.getId());
 
-                    chatListUpdate(currentApplicant.getUser().getId(), false, "");
+                    chatListUpdate(applicant.getUser().getId(), false, "");
                     chatListUpdate(employer.getUser().getId(), false, "");
 
                     return savedChatRoom;

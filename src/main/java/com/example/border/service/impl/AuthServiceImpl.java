@@ -2,7 +2,7 @@ package com.example.border.service.impl;
 
 import com.example.border.config.helper.CustomUserDetailsService;
 import com.example.border.config.jwt.JwtTokenUtil;
-import com.example.border.controller.PasswordChangeRequest;
+import com.example.border.model.dto.auth.PasswordChangeRequest;
 import com.example.border.exception.NotFoundException;
 import com.example.border.exception.UserAlreadyEnabledException;
 import com.example.border.exception.UserAlreadyExistsException;

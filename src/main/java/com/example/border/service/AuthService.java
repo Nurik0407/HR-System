@@ -1,6 +1,6 @@
 package com.example.border.service;
 
-import com.example.border.controller.PasswordChangeRequest;
+import com.example.border.model.dto.auth.PasswordChangeRequest;
 import com.example.border.model.dto.auth.AuthResponse;
 import com.example.border.model.dto.auth.LoginRequest;
 import com.example.border.model.dto.auth.RegisterRequest;
