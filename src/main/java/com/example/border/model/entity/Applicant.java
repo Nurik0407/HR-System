@@ -33,9 +33,9 @@ public class Applicant extends BaseEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "prof_skills_id")
-    private ProfSkills profSkills;
+    private ProfSkills profSkills = new ProfSkills();
 
     @OneToMany(mappedBy = "applicant", cascade = CascadeType.ALL)
     private List<VacancyApplication> vacancyApplications;

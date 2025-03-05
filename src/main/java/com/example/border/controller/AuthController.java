@@ -1,9 +1,6 @@
 package com.example.border.controller;
 
-import com.example.border.model.dto.auth.AuthResponse;
-import com.example.border.model.dto.auth.LoginRequest;
-import com.example.border.model.dto.auth.RegisterRequest;
-import com.example.border.model.dto.auth.VerificationRequest;
+import com.example.border.model.dto.auth.*;
 import com.example.border.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

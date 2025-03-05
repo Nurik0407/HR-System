@@ -5,10 +5,12 @@ import com.example.border.exception.NotFoundException;
 import com.example.border.model.dto.applicant.ApplicantDto;
 import com.example.border.model.dto.applicant.EducationDto;
 import com.example.border.model.dto.applicant.WorkExperienceDto;
+import com.example.border.model.dto.employer.candidate.ExperiencePeriod;
 import com.example.border.model.entity.Applicant;
 import com.example.border.model.entity.Education;
 import com.example.border.model.entity.ProfSkills;
 import com.example.border.model.entity.WorkExperience;
+import com.example.border.model.enums.Experience;
 import com.example.border.repository.ApplicantRepository;
 import com.example.border.service.ApplicantService;
 import org.slf4j.Logger;
@@ -16,9 +18,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.example.border.model.enums.Experience.*;
 
 @Service
 public class ApplicantServiceImpl implements ApplicantService {
@@ -34,14 +40,13 @@ public class ApplicantServiceImpl implements ApplicantService {
 
     @Transactional(readOnly = true)
     @Override
-    public ApplicantDto findCurrentApplicant() {
-        String currentUserEmail = jwtTokenUtil.getCurrentUserEmail();
+    public ApplicantDto getApplicantById(UUID id) {
 
-        log.debug("Fetching applicant by email: {}", currentUserEmail);
-        Applicant applicant = applicantRepository.findApplicantByUserEmail(currentUserEmail)
+        log.debug("Fetching applicant by ID: {}", id);
+        Applicant applicant = applicantRepository.findApplicantById(id)
                 .orElseThrow(() -> {
-                    log.error("Applicant not found with email: {}", currentUserEmail);
-                    return new NotFoundException("Applicant with email " + currentUserEmail + " not found");
+                    log.error("Applicant not found with ID: {}", id);
+                    return new NotFoundException("Applicant with ID " + id + " not found");
                 });
 
         log.info("Applicant found: {}", applicant.getId());
@@ -150,6 +155,46 @@ public class ApplicantServiceImpl implements ApplicantService {
             }
         });
         workExperiences.removeIf(workExperience -> !receivedId.contains(workExperience.getId()));
+
+        ExperiencePeriod experiencePeriod = calculateTotalExperience(workExperiences);
+        Experience experience = determineExperienceLevel(experiencePeriod.totalExperienceYears(), experiencePeriod.totalExperienceMonths());
+        skills.setExperience(experience);
+    }
+
+    private ExperiencePeriod calculateTotalExperience(List<WorkExperience> workExperiences) {
+        int totalExperienceYears = 0;
+        int totalExperienceMonths = 0;
+
+        for (WorkExperience workExperience : workExperiences) {
+            LocalDate startDate = workExperience.getStartDate();
+            LocalDate endDate = workExperience.getEndDate() != null ? workExperience.getEndDate() : LocalDate.now();
+
+            Period period = Period.between(startDate, endDate);
+            totalExperienceYears += period.getYears();
+            totalExperienceMonths += period.getMonths();
+        }
+
+        totalExperienceYears += totalExperienceMonths / 12;
+        totalExperienceMonths = totalExperienceMonths % 12;
+
+        log.debug("Total experience years: {} years and {} months", totalExperienceYears, totalExperienceMonths);
+
+        return new ExperiencePeriod(totalExperienceYears, totalExperienceMonths);
+    }
+
+    private Experience determineExperienceLevel(int totalExperienceYears, int totalExperienceMonths) {
+        double totalYears = totalExperienceYears + (totalExperienceMonths / 12.0);
+        log.info("Total experience years: {} years", totalYears);
+
+        if (totalYears < 1) {
+            return LESS_THAN_ONE_YEAR;
+        } else if (totalYears < 3) {
+            return ONE_TO_THREE_YEARS;
+        } else if (totalYears < 6) {
+            return THREE_TO_SIX_YEARS;
+        } else {
+            return MORE_THAN_SIX_YEARS;
+        }
     }
 
     private ApplicantDto convertToResponse(Applicant applicant) {

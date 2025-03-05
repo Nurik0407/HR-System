@@ -4,7 +4,6 @@ import com.example.border.model.enums.Position;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.OneToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,7 +24,7 @@ public class WorkExperience extends BaseEntity {
     private boolean currentJob;
     private String skills;
 
-    public WorkExperience(Position position, String companyName, LocalDate startDate, LocalDate endDate, String skills,boolean currentJob) {
+    public WorkExperience(Position position, String companyName, LocalDate startDate, LocalDate endDate, String skills, boolean currentJob) {
         this.position = position;
         this.companyName = companyName;
         this.startDate = startDate;

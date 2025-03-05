@@ -152,4 +152,14 @@ public class GlobalExceptionHandler {
                 exc.getMessage()
         );
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ExceptionResponse handleIllegalStateException(IllegalStateException e) {
+        return new ExceptionResponse(
+                HttpStatus.BAD_REQUEST,
+                e.getClass().getSimpleName(),
+                e.getMessage()
+        );
+    }
 }
