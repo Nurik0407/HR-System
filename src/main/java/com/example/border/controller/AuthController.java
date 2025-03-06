@@ -76,4 +76,22 @@ public class AuthController {
     public ResponseEntity<String> changePassword(@RequestBody PasswordChangeRequest request) {
         return ResponseEntity.ok(authService.changePassword(request));
     }
+
+    @PostMapping("/forgot-password")
+    @Operation(
+            summary = "Забыли пароль",
+            description = "Отправляет пользователю письмо с инструкцией по сбросу пароля."
+    )
+    public ResponseEntity<String> forgotPassword(@RequestParam String email) {
+        return ResponseEntity.ok(authService.processPasswordResetRequest(email));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(
+            summary = "Сброс пароля",
+            description = "Позволяет пользователю установить новый пароль после подтверждения кода."
+    )
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
+    }
 }

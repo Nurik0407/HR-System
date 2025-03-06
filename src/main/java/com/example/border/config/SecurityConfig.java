@@ -39,7 +39,10 @@ public class SecurityConfig {
             "/api/v1/auth/select-role",
 
             "/api/v1/vacancies/**",
-            "/ws/**"
+            "/ws/**",
+            "/api/v1/auth/reset-password/**",
+
+            "/css/**","/js/**","/images/**"
     };
 
     public SecurityConfig(JwtRequestFilter jwtRequestFilter,
@@ -72,6 +75,9 @@ public class SecurityConfig {
                         )
                         .successHandler(authenticationSuccessHandler)
                 )
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .permitAll())
                 .exceptionHandling(e -> e
                         .defaultAuthenticationEntryPointFor(((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

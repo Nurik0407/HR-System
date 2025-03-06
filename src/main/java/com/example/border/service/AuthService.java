@@ -1,10 +1,6 @@
 package com.example.border.service;
 
-import com.example.border.model.dto.auth.PasswordChangeRequest;
-import com.example.border.model.dto.auth.AuthResponse;
-import com.example.border.model.dto.auth.LoginRequest;
-import com.example.border.model.dto.auth.RegisterRequest;
-import com.example.border.model.dto.auth.VerificationRequest;
+import com.example.border.model.dto.auth.*;
 import jakarta.validation.Valid;
 
 public interface AuthService {
@@ -17,4 +13,8 @@ public interface AuthService {
     String confirmUserAccount(VerificationRequest request);
 
     String changePassword(PasswordChangeRequest request);
+
+    String processPasswordResetRequest(String email);
+
+    String resetPassword(ResetPasswordRequest request);
 }
