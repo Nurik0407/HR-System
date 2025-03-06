@@ -5,8 +5,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: nuradil936@gmail.com
-    password: rtrj ixfj ubnt dbpg
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -29,7 +29,7 @@ spring:
 
 # Jwt
 jwt:
-  secret: y3sLsTxsHDI5b++3MRgGSOFwE2Md+Ai4MS1G+LLCuu8=
+  secret: ${JWT_SECRET}
   expiration: 3600000
 
 # OpenApi
