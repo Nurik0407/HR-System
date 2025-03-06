@@ -1,6 +1,6 @@
 package com.example.border.model.dto.applicant;
 
-import com.example.border.model.enums.EducationDegree;
+import com.example.border.model.enums.EducationLevel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
@@ -13,7 +13,7 @@ public record EducationDto(
         UUID educationId,
 
         @NotNull(message = "Education degree is required")
-        EducationDegree educationDegree,
+        EducationLevel educationLevel,
 
         @NotBlank(message = "Institution name is required")
         @Size(max = 200, message = "Institution name must be less than 200 characters")
