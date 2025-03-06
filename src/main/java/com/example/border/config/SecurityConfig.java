@@ -59,6 +59,7 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_WHITE_LIST).permitAll()
                         .requestMatchers("/api/v1/applicant").hasAnyAuthority("ADMIN", "APPLICANT")
                         .requestMatchers("/api/v1/employers/vacancies").hasAnyAuthority("ADMIN", "EMPLOYER")
+                        .requestMatchers("/api/v1/favorites").hasAnyAuthority("ADMIN", "EMPLOYER")
 
                         .requestMatchers("/api/v1/vacancy/applications").hasAnyAuthority("ADMIN", "APPLICANT")
 
