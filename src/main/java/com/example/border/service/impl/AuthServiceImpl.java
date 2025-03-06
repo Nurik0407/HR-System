@@ -2,24 +2,14 @@ package com.example.border.service.impl;
 
 import com.example.border.config.helper.CustomUserDetailsService;
 import com.example.border.config.jwt.JwtTokenUtil;
-import com.example.border.model.dto.auth.PasswordChangeRequest;
 import com.example.border.exception.NotFoundException;
 import com.example.border.exception.UserAlreadyEnabledException;
 import com.example.border.exception.UserAlreadyExistsException;
 import com.example.border.exception.VerificationCodeExpiredException;
-import com.example.border.model.dto.auth.AuthResponse;
-import com.example.border.model.dto.auth.LoginRequest;
-import com.example.border.model.dto.auth.RegisterRequest;
-import com.example.border.model.dto.auth.VerificationRequest;
-import com.example.border.model.entity.Applicant;
-import com.example.border.model.entity.Employer;
-import com.example.border.model.entity.User;
-import com.example.border.model.entity.VerificationCode;
+import com.example.border.model.dto.auth.*;
+import com.example.border.model.entity.*;
 import com.example.border.model.enums.Role;
-import com.example.border.repository.ApplicantRepository;
-import com.example.border.repository.EmployerRepository;
-import com.example.border.repository.UserRepository;
-import com.example.border.repository.VerificationCodeRepository;
+import com.example.border.repository.*;
 import com.example.border.service.AuthService;
 import com.example.border.utils.UserContext;
 import org.slf4j.Logger;
@@ -36,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -51,9 +42,11 @@ public class AuthServiceImpl implements AuthService {
     private final EmailService emailService;
     private final ApplicantRepository applicantRepository;
     private final UserContext userContext;
+    private final ResetTokenRepository resetTokenRepository;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenUtil jwtTokenUtil, AuthenticationManager authenticationManager, CustomUserDetailsService customUserDetailsService, EmployerRepository employerRepository,
-                           VerificationCodeRepository verificationCodeRepository, EmailService emailService, ApplicantRepository applicantRepository, UserContext userContext) {
+                           VerificationCodeRepository verificationCodeRepository, EmailService emailService, ApplicantRepository applicantRepository, UserContext userContext,
+                           ResetTokenRepository resetTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenUtil = jwtTokenUtil;
@@ -64,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
         this.emailService = emailService;
         this.applicantRepository = applicantRepository;
         this.userContext = userContext;
+        this.resetTokenRepository = resetTokenRepository;
     }
 
     @Transactional
@@ -193,10 +187,7 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        if (!request.newPassword().equals(request.confirmPassword())) {
-            log.error("New password and confirmation do not match for user: {}", currentUser.getEmail());
-            throw new IllegalArgumentException("New password and confirmation do not match.");
-        }
+        validatePasswords(request.newPassword(),request.confirmPassword());
 
         currentUser.setHasPassword(true);
         currentUser.setPassword(passwordEncoder.encode(request.newPassword()));
@@ -204,6 +195,44 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Password successfully changed for user: {}", currentUser.getEmail());
         return "Password changed successfully";
+    }
+
+    @Override
+    public String processPasswordResetRequest(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User with email: " + email + " not found"));
+
+        resetTokenRepository.findByUser(user).ifPresent(resetTokenRepository::delete);
+
+        String token = UUID.randomUUID().toString();
+        ResetToken resetToken = new ResetToken(token, LocalDateTime.now().plusMinutes(10), user);
+        resetTokenRepository.save(resetToken);
+        emailService.sendResetPasswordEmail(email, token);
+
+        return "Reset password email sent successfully";
+    }
+
+    @Override
+    public String resetPassword(ResetPasswordRequest request) {
+        ResetToken resetToken = resetTokenRepository.findByToken(request.token())
+                .orElseThrow(() -> new NotFoundException("Token not found"));
+
+        if (resetToken.getExpiryTime().isBefore(LocalDateTime.now())) {
+            throw new BadCredentialsException("Token is expired");
+        }
+
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            resetTokenRepository.delete(resetToken);
+            throw new BadCredentialsException("New password does not match");
+        }
+
+        validatePasswords(request.newPassword(),request.confirmPassword());
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        resetTokenRepository.delete(resetToken);
+        return "Password reset successfully";
     }
 
     private void sendVerificationCode(User user) {
@@ -236,5 +265,11 @@ public class AuthServiceImpl implements AuthService {
 
     private LocalDateTime calculateExpirationTime() {
         return LocalDateTime.now().plusMinutes(5);
+    }
+
+    private void validatePasswords(String newPassword, String confirmPassword) {
+        if (!newPassword.equals(confirmPassword)) {
+            throw new BadCredentialsException("New password does not match");
+        }
     }
 }
