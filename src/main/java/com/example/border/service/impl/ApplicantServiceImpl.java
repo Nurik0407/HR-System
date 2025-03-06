@@ -3,20 +3,31 @@ package com.example.border.service.impl;
 import com.example.border.config.jwt.JwtTokenUtil;
 import com.example.border.exception.NotFoundException;
 import com.example.border.model.dto.applicant.ApplicantDto;
+import com.example.border.model.dto.applicant.ApplicantsResponse;
 import com.example.border.model.dto.applicant.EducationDto;
 import com.example.border.model.dto.applicant.WorkExperienceDto;
 import com.example.border.model.dto.employer.candidate.ExperiencePeriod;
-import com.example.border.model.entity.Applicant;
-import com.example.border.model.entity.Education;
-import com.example.border.model.entity.ProfSkills;
-import com.example.border.model.entity.WorkExperience;
+import com.example.border.model.entity.*;
+import com.example.border.model.enums.Country;
+import com.example.border.model.enums.EducationLevel;
 import com.example.border.model.enums.Experience;
+import com.example.border.model.enums.Position;
 import com.example.border.repository.ApplicantRepository;
+import com.example.border.repository.FavoriteRepository;
 import com.example.border.service.ApplicantService;
+import com.example.border.utils.UserContext;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -32,10 +43,14 @@ public class ApplicantServiceImpl implements ApplicantService {
     private static final Logger log = LoggerFactory.getLogger(ApplicantServiceImpl.class);
     private final ApplicantRepository applicantRepository;
     private final JwtTokenUtil jwtTokenUtil;
+    private final UserContext userContext;
+    private final FavoriteRepository favoriteRepository;
 
-    public ApplicantServiceImpl(ApplicantRepository applicantRepository, JwtTokenUtil jwtTokenUtil) {
+    public ApplicantServiceImpl(ApplicantRepository applicantRepository, JwtTokenUtil jwtTokenUtil, UserContext userContext, FavoriteRepository favoriteRepository) {
         this.applicantRepository = applicantRepository;
         this.jwtTokenUtil = jwtTokenUtil;
+        this.userContext = userContext;
+        this.favoriteRepository = favoriteRepository;
     }
 
     @Transactional(readOnly = true)
@@ -91,6 +106,43 @@ public class ApplicantServiceImpl implements ApplicantService {
                 });
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public Page<ApplicantsResponse> getApplicants(int page,
+                                                  int size,
+                                                  String keyWord,
+                                                  Position position,
+                                                  EducationLevel educationLevel,
+                                                  Country country,
+                                                  String city,
+                                                  String experience) {
+        log.debug("Fetching applicants with params - page: {}, size: {}, keyword: {}, position: {}, educationLevel: {}, country: {}, city: {}, experience: {}",
+                page, size, keyWord, position, educationLevel, country, city, experience);
+
+        Employer currentEmployer = userContext.getCurrentUser().getEmployer();
+
+        Pageable pageable = PageRequest.of(
+                page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Specification<Applicant> specification = buildSpecification(
+                keyWord,
+                position,
+                educationLevel,
+                country,
+                city,
+                experience
+        );
+
+        log.debug("Building specification completed. Executing query...");
+
+        Page<Applicant> applicants = applicantRepository.findAll(specification, pageable);
+
+        Page<ApplicantsResponse> response = applicants.map(a -> mapToApplicantsResponse(a, currentEmployer));
+
+        log.debug("Returning applicants response with {} items.", response.getContent().size());
+        return response;
+    }
+
     private void updateEducations(Applicant applicant, List<EducationDto> educationsResponse) {
         ProfSkills skills = applicant.getProfSkills();
         List<Education> educations = skills.getEducationList();
@@ -108,11 +160,11 @@ public class ApplicantServiceImpl implements ApplicantService {
             if (dto.educationId() != null && existingEducationMap.containsKey(dto.educationId())) {
                 Education existing = existingEducationMap.get(dto.educationId());
                 existing.setInstitution(dto.institution());
-                existing.setEducationDegree(dto.educationDegree());
+                existing.setEducationLevel(dto.educationLevel());
                 existing.setGraduationDate(dto.graduationDate());
             } else {
                 Education newEducation = new Education(
-                        dto.educationDegree(),
+                        dto.educationLevel(),
                         dto.institution(),
                         dto.graduationDate()
                 );
@@ -219,7 +271,7 @@ public class ApplicantServiceImpl implements ApplicantService {
                         .map(education ->
                                 new EducationDto(
                                         education.getId(),
-                                        education.getEducationDegree(),
+                                        education.getEducationLevel(),
                                         education.getInstitution(),
                                         education.getGraduationDate()))
                         .toList() : Collections.emptyList(),
@@ -234,6 +286,80 @@ public class ApplicantServiceImpl implements ApplicantService {
                                         workExperience.isCurrentJob(),
                                         workExperience.getSkills()))
                         .toList() : Collections.emptyList()
+        );
+    }
+
+    private Specification<Applicant> buildSpecification(
+            String keyWord,
+            Position position,
+            EducationLevel educationLevel,
+            Country country,
+            String city,
+            String experienceString) {
+
+        return ((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            Join<Applicant, User> userJoin = root.join("user");
+            predicates.add(cb.equal(userJoin.get("enabled"), true));
+
+            if (StringUtils.hasText(keyWord)) {
+                String searchPattern = "%" + keyWord.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("firstName")), searchPattern),
+                        cb.like(cb.lower(root.get("lastName")), searchPattern),
+                        cb.like(cb.lower(root.get("profSkills").get("workExperiences").get("position")), searchPattern)));
+            }
+
+            if (position != null) {
+                predicates.add(cb.equal(
+                        root.get("profSkills").get("workExperiences").get("position"), position));
+            }
+
+            if (educationLevel != null) {
+                predicates.add(cb.equal(
+                        root.get("profSkills").get("educationList").get("educationLevel"), educationLevel));
+            }
+
+            if (country != null) {
+                predicates.add(cb.equal(root.get("country"), country));
+            }
+
+            if (StringUtils.hasText(city)) {
+                predicates.add(cb.equal(root.get("city"), city));
+            }
+
+            if (StringUtils.hasText(experienceString)) {
+                Experience experience = valueOf(experienceString.toUpperCase());
+                predicates.add(cb.equal(root.get("profSkills").get("experience"), experience));
+            }
+
+            assert query != null;
+            query.distinct(true);
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+    }
+
+    private ApplicantsResponse mapToApplicantsResponse(Applicant applicant, Employer employer) {
+
+        ProfSkills profSkills = applicant.getProfSkills();
+        WorkExperience workExperience = profSkills.getWorkExperiences().get(0);
+
+        log.debug("Mapping applicant with ID {} to ApplicantsResponse.", applicant.getId());
+
+        boolean inFavorite = favoriteRepository.existsByEmployerAndApplicant(employer, applicant);
+
+        return new ApplicantsResponse(
+                applicant.getId(),
+                applicant.getProfilePhotoUrl(),
+                applicant.getFirstName(),
+                applicant.getLastName(),
+                workExperience.getPosition(),
+                profSkills.getExperience(),
+                applicant.getCountry(),
+                applicant.getCity(),
+                inFavorite
         );
     }
 }

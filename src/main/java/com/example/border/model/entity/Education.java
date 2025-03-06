@@ -1,6 +1,6 @@
 package com.example.border.model.entity;
 
-import com.example.border.model.enums.EducationDegree;
+import com.example.border.model.enums.EducationLevel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,12 +15,12 @@ import java.time.LocalDate;
 public class Education extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
-    private EducationDegree educationDegree;
+    private EducationLevel educationLevel;
     private String institution;
     private LocalDate graduationDate;
 
-    public Education(EducationDegree educationDegree, String institution, LocalDate graduationDate) {
-        this.educationDegree = educationDegree;
+    public Education(EducationLevel educationLevel, String institution, LocalDate graduationDate) {
+        this.educationLevel = educationLevel;
         this.institution = institution;
         this.graduationDate = graduationDate;
     }
