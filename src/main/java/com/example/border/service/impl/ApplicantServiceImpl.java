@@ -43,11 +43,7 @@ public class ApplicantServiceImpl implements ApplicantService {
     public ApplicantDto getApplicantById(UUID id) {
 
         log.debug("Fetching applicant by ID: {}", id);
-        Applicant applicant = applicantRepository.findApplicantById(id)
-                .orElseThrow(() -> {
-                    log.error("Applicant not found with ID: {}", id);
-                    return new NotFoundException("Applicant with ID " + id + " not found");
-                });
+        Applicant applicant = findApplicantById(id);
 
         log.info("Applicant found: {}", applicant.getId());
         return convertToResponse(applicant);
@@ -86,6 +82,14 @@ public class ApplicantServiceImpl implements ApplicantService {
         return convertToResponse(savedApplicant);
     }
 
+    @Override
+    public Applicant findApplicantById(UUID applicantId) {
+        return applicantRepository.findApplicantById(applicantId)
+                .orElseThrow(() -> {
+                    log.error("Applicant not found with ID: {}", applicantId);
+                    return new NotFoundException("Applicant with ID " + applicantId + " not found");
+                });
+    }
 
     private void updateEducations(Applicant applicant, List<EducationDto> educationsResponse) {
         ProfSkills skills = applicant.getProfSkills();

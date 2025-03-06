@@ -6,7 +6,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -31,4 +33,7 @@ public class Employer extends BaseEntity {
 
     @OneToMany(mappedBy = "employer")
     private List<Notification> notifications = new ArrayList<>();
+
+    @OneToMany(mappedBy = "employer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Favorite> favourites = new HashSet<>();
 }
